@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"image"
@@ -10,6 +11,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/disintegration/imaging"
 	"simonwaldherr.de/go/zplgfa/zplgfa"
@@ -53,6 +55,8 @@ func main() {
 		log.Fatalf("Invalid DPI value: %s. Must be greater than zero.", *dpi)
 	}
 
+	startTime := time.Now()
+
 	// Open the input file
 	file, err := os.Open(*inputFile)
 	logError(err, "could not open the file")
@@ -61,8 +65,11 @@ func main() {
 	}
 	defer file.Close()
 
+	// Create a buffered reader
+	reader := bufio.NewReader(file)
+
 	// Load image head information
-	config, _, err := image.DecodeConfig(file)
+	config, _, err := image.DecodeConfig(reader)
 	logError(err, "image not compatible")
 	if err != nil {
 		return
@@ -75,7 +82,7 @@ func main() {
 	}
 
 	// Load and decode image
-	img, _, err := image.Decode(file)
+	img, _, err := image.Decode(reader)
 	logError(err, "could not decode the file")
 	if err != nil {
 		return
@@ -102,11 +109,23 @@ func main() {
 	}
 	defer output.Close()
 
-	// Write the ZPL data to the file
-	if _, err := output.WriteString(gfimg); err != nil {
+	// Create a buffered writer
+	writer := bufio.NewWriter(output)
+
+	// Write the ZPL data to the file using the buffered writer
+	if _, err := writer.WriteString(gfimg); err != nil {
 		logError(err, "could not write to the output file")
 		return
 	}
 
+	// Flush the buffer to ensure all data is written to the file
+	if err := writer.Flush(); err != nil {
+		logError(err, "could not flush the buffered writer")
+		return
+	}
 	fmt.Println("Image processing completed successfully.")
+
+	// Calculate and display elapsed time
+	elapsedTime := time.Since(startTime)
+	fmt.Printf("Processing time: %s\n", elapsedTime)
 }
