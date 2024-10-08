@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"image"
 	_ "image/gif"
@@ -8,65 +9,104 @@ import (
 	_ "image/png"
 	"log"
 	"os"
-	"time"
+	"strconv"
 
 	"github.com/disintegration/imaging"
 	"simonwaldherr.de/go/zplgfa/zplgfa"
 )
 
-func main() {
-	startTime := time.Now()
+// Constants for DPI
+const (
+	targetDPI = 300.0
+)
 
-	// open file
-	file, err := os.Open("input.jpg")
+// logError logs the error with a message
+func logError(err error, msg string) {
 	if err != nil {
-		log.Printf("Warning: could not open the file: %s\n", err)
+		log.Printf("Warning: %s: %s\n", msg, err)
+	}
+}
+
+func main() {
+	// Define command-line flags
+	inputFile := flag.String("input", "", "Path to the input image file (mandatory)")
+	outputFile := flag.String("output", "", "Path to the output ZPL file (mandatory)")
+	dpi := flag.String("dpi", "200", "Original DPI (optional, default is 200)")
+
+	// Parse command-line flags
+	flag.Parse()
+
+	// Check mandatory flags
+	if *inputFile == "" || *outputFile == "" {
+		fmt.Println("Error: Input and output file paths are mandatory.")
+		flag.Usage()
 		return
 	}
 
-	defer file.Close()
-
-	// load image head information
-	config, format, err := image.DecodeConfig(file)
+	// Parse the DPI argument
+	originalDPI, err := strconv.ParseFloat(*dpi, 64)
 	if err != nil {
-		log.Printf("Warning: image not compatible, format: %s, config: %v, error: %s\n", format, config, err)
+		log.Fatalf("Invalid DPI value: %s. Must be a number.", *dpi)
 	}
 
-	// reset file pointer to the beginning of the file
-	file.Seek(0, 0)
+	if originalDPI <= 0 {
+		log.Fatalf("Invalid DPI value: %s. Must be greater than zero.", *dpi)
+	}
 
-	// load and decode image
-	img, _, err := image.Decode(file)
+	// Open the input file
+	file, err := os.Open(*inputFile)
+	logError(err, "could not open the file")
 	if err != nil {
-		log.Printf("Warning: could not decode the file, %s\n", err)
+		return
+	}
+	defer file.Close()
+
+	// Load image head information
+	config, _, err := image.DecodeConfig(file)
+	logError(err, "image not compatible")
+	if err != nil {
+		return
+	}
+
+	// Reset file pointer to the beginning of the file
+	if _, err := file.Seek(0, 0); err != nil {
+		logError(err, "could not seek to the beginning of the file")
+		return
+	}
+
+	// Load and decode image
+	img, _, err := image.Decode(file)
+	logError(err, "could not decode the file")
+	if err != nil {
 		return
 	}
 
 	// Rotate the image 90 degrees to the right
 	rotatedImg := imaging.Rotate270(img)
 
-	// flatten image
+	// Flatten and resize image in one go
 	flat := zplgfa.FlattenImage(rotatedImg)
+	scaleFactor := targetDPI / originalDPI
+	newWidth := int(float64(config.Width) * scaleFactor)
+	newHeight := int(float64(config.Height) * scaleFactor)
+	resizedImage := imaging.Resize(flat, newWidth, newHeight, imaging.Lanczos)
 
-	// convert image to zpl compatible type
-	gfimg := zplgfa.ConvertToZPL(flat, zplgfa.CompressedASCII)
+	// Convert image to ZPL compatible type
+	gfimg := zplgfa.ConvertToZPL(resizedImage, zplgfa.CompressedASCII)
 
-	// create and open a .zpl file for writing
-	outputFile, err := os.Create("output.zpl")
+	// Create and open the output file for writing
+	output, err := os.Create(*outputFile)
+	logError(err, "could not create the output file")
 	if err != nil {
-		log.Printf("Warning: could not create the output file: %s\n", err)
 		return
 	}
-	defer outputFile.Close()
+	defer output.Close()
 
-	// write the ZPL data to the file
-	_, err = outputFile.WriteString(gfimg)
-	if err != nil {
-		log.Printf("Warning: could not write to the output file: %s\n", err)
+	// Write the ZPL data to the file
+	if _, err := output.WriteString(gfimg); err != nil {
+		logError(err, "could not write to the output file")
 		return
 	}
 
-	// Calculate and display elapsed time
-	elapsedTime := time.Since(startTime)
-	fmt.Printf("Processing time: %s\n", elapsedTime)
+	fmt.Println("Image processing completed successfully.")
 }
