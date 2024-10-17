@@ -11,7 +11,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/disintegration/imaging"
 	"simonwaldherr.de/go/zplgfa/zplgfa"
@@ -54,8 +53,6 @@ func main() {
 	if originalDPI <= 0 {
 		log.Fatalf("Invalid DPI value: %s. Must be greater than zero.", *dpi)
 	}
-
-	startTime := time.Now()
 
 	// Open the input file
 	file, err := os.Open(*inputFile)
@@ -125,7 +122,4 @@ func main() {
 	}
 	fmt.Println("Image processing completed successfully.")
 
-	// Calculate and display elapsed time
-	elapsedTime := time.Since(startTime)
-	fmt.Printf("Processing time: %s\n", elapsedTime)
 }
