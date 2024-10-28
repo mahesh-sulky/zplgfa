@@ -10,6 +10,7 @@ import (
 	_ "image/png"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/disintegration/imaging"
@@ -19,6 +20,7 @@ import (
 // Constants for DPI
 const (
 	targetDPI = 300.0
+	outputDir = "/mnt/bvm01/zpl_files/"
 )
 
 // logError logs the error with a message
@@ -53,6 +55,9 @@ func main() {
 	if originalDPI <= 0 {
 		log.Fatalf("Invalid DPI value: %s. Must be greater than zero.", *dpi)
 	}
+
+	// Full output file path in /mnt/zpl_files
+	outputFilePath := filepath.Join(outputDir, *outputFile)
 
 	// Open the input file
 	file, err := os.Open(*inputFile)
@@ -99,7 +104,7 @@ func main() {
 	gfimg := zplgfa.ConvertToZPL(resizedImage, zplgfa.CompressedASCII)
 
 	// Create and open the output file for writing
-	output, err := os.Create(*outputFile)
+	output, err := os.Create(outputFilePath)
 	logError(err, "could not create the output file")
 	if err != nil {
 		return
