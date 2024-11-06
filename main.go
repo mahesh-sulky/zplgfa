@@ -32,7 +32,7 @@ func main() {
 	// Define command-line flags
 	inputFile := flag.String("input", "", "Path to the input image file (mandatory)")
 	outputFile := flag.String("output", "", "Path to the output ZPL file (mandatory)")
-	dpi := flag.String("dpi", "200", "Original DPI (optional, default is 200)")
+	dpi := flag.String("dpi", "300", "Original DPI (optional, default is 300)")
 
 	// Parse command-line flags
 	flag.Parse()
@@ -91,8 +91,8 @@ func main() {
 	// Flatten and resize image in one go
 	flat := zplgfa.FlattenImage(rotatedImg)
 	scaleFactor := targetDPI / originalDPI
-	newWidth := int(float64(config.Width) * scaleFactor)
-	newHeight := int(float64(config.Height) * scaleFactor)
+	newHeight := int(float64(config.Width) * scaleFactor)
+	newWidth := int(float64(config.Height) * scaleFactor)
 	resizedImage := imaging.Resize(flat, newWidth, newHeight, imaging.Lanczos)
 
 	// Convert image to ZPL compatible type
