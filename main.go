@@ -16,11 +16,6 @@ import (
 	"simonwaldherr.de/go/zplgfa/zplgfa"
 )
 
-// Constants for DPI
-const (
-	targetDPI = 300.0
-)
-
 // logError logs the error with a message
 func logError(err error, msg string) {
 	if err != nil {
@@ -32,7 +27,8 @@ func main() {
 	// Define command-line flags
 	inputFile := flag.String("input", "", "Path to the input image file (mandatory)")
 	outputFile := flag.String("output", "", "Path to the output ZPL file (mandatory)")
-	dpi := flag.String("dpi", "300", "Original DPI (optional, default is 300)")
+	inputDpi := flag.String("inputdpi", "200", "Input DPI (optional, default is 200)")
+	outputDpi := flag.String("outputdpi", "300", "Output DPI (optional, default is 300)")
 
 	// Parse command-line flags
 	flag.Parse()
@@ -44,14 +40,23 @@ func main() {
 		return
 	}
 
-	// Parse the DPI argument
-	originalDPI, err := strconv.ParseFloat(*dpi, 64)
+	outDPI, err := strconv.ParseFloat(*outputDpi, 64)
 	if err != nil {
-		log.Fatalf("Invalid DPI value: %s. Must be a number.", *dpi)
+		log.Fatalf("Invalid DPI value: %s. Must be a number.", *outputDpi)
 	}
 
-	if originalDPI <= 0 {
-		log.Fatalf("Invalid DPI value: %s. Must be greater than zero.", *dpi)
+	if outDPI <= 0 {
+		log.Fatalf("Invalid DPI value: %s. Must be greater than zero.", *outputDpi)
+	}
+
+	// Parse the DPI argument
+	inDPI, err := strconv.ParseFloat(*inputDpi, 64)
+	if err != nil {
+		log.Fatalf("Invalid DPI value: %s. Must be a number.", *inputDpi)
+	}
+
+	if inDPI <= 0 {
+		log.Fatalf("Invalid DPI value: %s. Must be greater than zero.", *inputDpi)
 	}
 
 	// Open the input file
@@ -90,7 +95,7 @@ func main() {
 
 	// Flatten and resize image in one go
 	flat := zplgfa.FlattenImage(rotatedImg)
-	scaleFactor := targetDPI / originalDPI
+	scaleFactor := outDPI / inDPI
 	newHeight := int(float64(config.Width) * scaleFactor)
 	newWidth := int(float64(config.Height) * scaleFactor)
 	resizedImage := imaging.Resize(flat, newWidth, newHeight, imaging.Lanczos)
