@@ -93,8 +93,8 @@ func main() {
 	// Flatten and resize image in one go
 	flat := zplgfa.FlattenImage(img)
 	scaleFactor := outDPI / inDPI
-	newHeight := int(float64(config.Width) * scaleFactor)
-	newWidth := int(float64(config.Height) * scaleFactor)
+	newHeight := int(float64(config.Height) * scaleFactor)
+	newWidth := int(float64(config.Width) * scaleFactor)
 	resizedImage := imaging.Resize(flat, newWidth, newHeight, imaging.Lanczos)
 
 	// Convert image to ZPL compatible type
