@@ -90,11 +90,8 @@ func main() {
 		return
 	}
 
-	// Rotate the image 90 degrees to the right
-	rotatedImg := imaging.Rotate270(img)
-
 	// Flatten and resize image in one go
-	flat := zplgfa.FlattenImage(rotatedImg)
+	flat := zplgfa.FlattenImage(img)
 	scaleFactor := outDPI / inDPI
 	newHeight := int(float64(config.Width) * scaleFactor)
 	newWidth := int(float64(config.Height) * scaleFactor)
